@@ -1,2 +1,2 @@
-# Personal-data-analysis-modeling-working-examples
-Personal data analysis &amp; modeling working examples.
+# Personal Data Analysis Modeling Working Examples
+Yuru.
