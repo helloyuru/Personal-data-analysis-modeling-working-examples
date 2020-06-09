@@ -1,0 +1,384 @@
+---
+title: "AMP task 2 - Yuru Li"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Descriptive Statistic
+
+```{r echo=FALSE, message=FALSE,warning=FALSE}
+library(psych)
+library(dplyr)
+library(ggplot2)
+library(e1071)
+library(forecast)
+library(dummies)
+library(lubridate)
+library(car)
+MMM <- read.csv("/Users/yuru/Documents/Career2020/DBC/AMP/internshiptaskdataanalystyuruli/datasets/MMM.csv",header = T)
+HON <- read.csv("/Users/yuru/Documents/Career2020/DBC/AMP/internshiptaskdataanalystyuruli/datasets/HON.csv",header = T)
+EMR <- read.csv("/Users/yuru/Documents/Career2020/DBC/AMP/internshiptaskdataanalystyuruli/datasets/EMR.csv",header = T)
+df_MMM <- MMM
+df_MMM["lag"] <- dplyr::lag(df_MMM[,"Adj.Close"],1)
+df_MMM["return"] <- ((df_MMM[,"Adj.Close"]-df_MMM[,"lag"])/df_MMM[,"lag"])*100
+df_MMM <- df_MMM[-1,]
+df_HON <- HON
+df_HON["lag"] <- dplyr::lag(df_HON[,"Adj.Close"],1)
+df_HON["return"] <- ((df_HON[,"Adj.Close"]-df_HON[,"lag"])/df_HON[,"lag"])*100
+df_HON <- df_HON[-1,]
+
+df_EMR <- EMR
+df_EMR["lag"] <- dplyr::lag(df_EMR[,"Adj.Close"],1)
+df_EMR["return"] <- ((df_EMR[,"Adj.Close"]-df_EMR[,"lag"])/df_EMR[,"lag"])*100
+df_EMR <- df_EMR[-1,]
+
+
+```
+
+
+```{r}
+close_price_des_stats <- rbind(as.data.frame(describe(df_MMM$Adj.Close)),
+as.data.frame(describe(df_HON$Adj.Close)),
+as.data.frame(describe(df_EMR$Adj.Close)))
+
+rownames(close_price_des_stats) <- c("MMM","HON","EMR")
+
+t(close_price_des_stats)
+
+#write.csv(t(close_price_des_stats),"/Users/yuru/Documents/Career2020/DBC/AMP/internshiptaskdataanalystyuruli/datasets/des_stats_price.csv")
+```
+
+```{r echo=FALSE, message=FALSE,warning=FALSE}
+close_return_des_stats <- rbind(as.data.frame(describe(df_MMM$return)),
+as.data.frame(describe(df_HON$return)),
+as.data.frame(describe(df_EMR$return)))
+
+rownames(close_return_des_stats) <- c("MMM","HON","EMR")
+
+t(close_return_des_stats)
+#write.csv(t(close_return_des_stats),"/Users/yuru/Documents/Career2020/DBC/AMP/internshiptaskdataanalystyuruli/datasets/des_stats_return.csv")
+```
+
+# Stationary Check
+
+
+(1) Plots of return
+```{r fig.height=3, fig.width=10}
+par(mfrow=c(1,3))
+plot(df_MMM$return,type = "l", lwd = 2, ylab = "Daily Return",main = "3M")
+plot(df_HON$return,type = "l", lwd = 2, ylab = "Daily Return",main = "Honeywell")
+plot(df_EMR$return,type = "l", lwd = 2, ylab = "Daily Return",main = "Emerson")
+
+```
+```{r fig.height=3, fig.width=10}
+par(mfrow=c(1,3))
+plot(df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))],type = "l",ylim=c(-20,20), lwd = 2, ylab = "Daily Return",main = "3M")
+plot(df_HON$return[-((nrow(df_MMM)-20):nrow(df_MMM))],type = "l",ylim=c(-20,20), lwd = 2, ylab = "Daily Return",main = "Honeywell")
+plot(df_EMR$return[-((nrow(df_MMM)-20):nrow(df_MMM))],type = "l",ylim=c(-20,20), lwd = 2, ylab = "Daily Return",main = "Emerson")
+
+```
+
+```{r fig.height=3, fig.width=10}
+par(mfrow=c(1,3))
+hist(df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))],ylim=c(0,1500), xlab = "Daily Return",main = "3M")
+hist(df_HON$return[-((nrow(df_MMM)-20):nrow(df_MMM))],ylim=c(0,1500), xlab = "Daily Return",main = "Honeywell")
+hist(df_EMR$return[-((nrow(df_MMM)-20):nrow(df_MMM))],ylim=c(0,1500), xlab = "Daily Return",main = "Emerson")
+```
+
+(2) Autocorrelation and Partial Autocorrelation
+
+```{r fig.height=3, fig.width=10}
+par(mfrow=c(1,3))
+acf(df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))],main = "3M")
+acf(df_HON$return[-((nrow(df_MMM)-20):nrow(df_MMM))],main = "Honeywell")
+acf(df_EMR$return[-((nrow(df_MMM)-20):nrow(df_MMM))],main = "Emerson")
+```
+
+```{r fig.height=3, fig.width=10}
+par(mfrow=c(1,3))
+pacf(df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))],main = "3M")
+pacf(df_HON$return[-((nrow(df_MMM)-20):nrow(df_MMM))],main = "Honeywell")
+pacf(df_EMR$return[-((nrow(df_MMM)-20):nrow(df_MMM))],main = "Emerson")
+```
+
+(3) Augmented Dickey-Fuller Test
+```{r}
+library(aTSA)
+adf.test(df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))])
+adf.test(df_HON$return[-((nrow(df_HON)-20):nrow(df_HON))])
+adf.test(df_EMR$return[-((nrow(df_EMR)-20):nrow(df_EMR))])
+```
+
+
+(4) Phillips-Perron Test
+```{r}
+pp.test(df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))])
+pp.test(df_HON$return[-((nrow(df_HON)-20):nrow(df_HON))])
+pp.test(df_EMR$return[-((nrow(df_EMR)-20):nrow(df_EMR))])
+```
+
+(5) KPSS test
+```{r}
+kpss.test(df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))])
+kpss.test(df_HON$return[-((nrow(df_HON)-20):nrow(df_HON))])
+kpss.test(df_EMR$return[-((nrow(df_EMR)-20):nrow(df_EMR))])
+```
+
+(6) Shapiro-Wilk Test
+```{r}
+shapiro.test(df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))])
+shapiro.test(df_HON$return[-((nrow(df_HON)-20):nrow(df_HON))])
+shapiro.test(df_EMR$return[-((nrow(df_EMR)-20):nrow(df_EMR))])
+```
+
+
+(7) OLR
+```{r}
+summary(lm(return~lag,data=df_MMM,na.action = na.omit))
+```
+```{r}
+summary(lm(return~lag,data=df_HON,na.action = na.omit))
+```
+```{r}
+summary(lm(return~lag,data=df_EMR,na.action = na.omit))
+```
+# Modeling
+
+## data seperation
+```{r}
+#MMM
+MMM_train<- df_MMM$return[-((nrow(df_MMM)-20):nrow(df_MMM))]
+MMM_test <- MMM_train[round((nrow(df_MMM)-20)*0.9):((nrow(df_MMM)-20)-1)]
+MMM_train <- MMM_train[1:round((nrow(df_MMM)-20)*0.9)-1]
+
+#HON
+HON_train<- df_HON$return[-((nrow(df_HON)-20):nrow(df_HON))]
+HON_test <- HON_train[round((nrow(df_HON)-20)*0.9):((nrow(df_HON)-20)-1)]
+HON_train <- HON_train[1:(round((nrow(df_HON)-20)*0.9)-1)]
+
+#EMR
+EMR_train<- df_EMR$return[-((nrow(df_EMR)-20):nrow(df_EMR))]
+EMR_test <- EMR_train[round((nrow(df_EMR)-20)*0.9):((nrow(df_EMR)-20)-1)]
+EMR_train <- EMR_train[1:(round((nrow(df_EMR)-20)*0.9)-1)]
+
+```
+
+## ARMA
+construction
+```{r}
+auto.arima(MMM_train)
+arima_MMM <- arima(MMM_train,order=c(2,0,2))
+```
+
+```{r}
+auto.arima(HON_train)
+arima_HON <- arima(HON_train,order=c(3,0,3))
+```
+
+
+```{r}
+auto.arima(EMR_train)
+arima_EMR <- arima(EMR_train,order=c(0,0,0))
+```
+
+prediction
+```{r}
+model <- arima_MMM
+test <- MMM_test
+predict_result <- predict(model,n.ahead = length(test))
+ptable <- cbind(as.data.frame(as.numeric(predict_result$pred)),as.data.frame(test))
+colnames(ptable) <- c("predict","test")
+summary(aov(values~ind,data=stack(ptable)))
+```
+```{r}
+model <- arima_HON
+test <- HON_test
+predict_result <- predict(model,n.ahead = length(test))
+ptable <- cbind(as.data.frame(as.numeric(predict_result$pred)),as.data.frame(test))
+colnames(ptable) <- c("predict","test")
+summary(aov(values~ind,data=stack(ptable)))
+```
+```{r}
+model <- arima_EMR
+test <- EMR_test
+predict_result <- predict(model,n.ahead = length(test))
+ptable <- cbind(as.data.frame(as.numeric(predict_result$pred)),as.data.frame(test))
+colnames(ptable) <- c("predict","test")
+summary(aov(values~ind,data=stack(ptable)))
+```
+
+## linear states-space model
+```{r}
+library("dlm")
+training_dataset <- MMM_train
+testing_dataset <- MMM_test
+# noise return
+train_plus_noisy <- training_dataset + rnorm(length(training_dataset), 0, 2)
+test_plus_noisy <- testing_dataset + rnorm(length(testing_dataset), 0, 2)
+# forecasting using state sapce models
+model.build <- function(p) {
+  return(
+    dlmModPoly(2, dV=p[1], dW=p[2:3]) +dlmModSeas(12, dV=p[4])
+  )}
+#MLE
+model.mle <- dlmMLE(training_dataset, parm=c(1, 1, 1, 1), build=model.build)
+model.fit <- model.build(model.mle$par)
+model.filtered <- dlmFilter(training_dataset, model.fit)
+model.smoothed <- dlmSmooth(training_dataset, model.fit)
+```
+
+
+```{r}
+#perdict
+nAhead <- length(test_plus_noisy)
+model.forecast <- dlmForecast(model.filtered, nAhead=nAhead)
+a <- drop(model.forecast$a%*%t(FF(model.fit)))
+```
+
+```{r}
+test <- test_plus_noisy
+predict_result <- a
+ptable <- cbind(as.data.frame(predict_result),as.data.frame(test))
+colnames(ptable) <- c("predict","test")
+summary(aov(values~ind,data=stack(ptable)))
+```
+
+
+
+
+
+
+
+
+
+```{r}
+
+training_dataset <- HON_train
+testing_dataset <- HON_test
+# noise return
+train_plus_noisy <- training_dataset + rnorm(length(training_dataset), 0, 2)
+test_plus_noisy <- testing_dataset + rnorm(length(testing_dataset), 0, 2)
+# forecasting using state sapce models
+model.build <- function(p) {
+  return(
+    dlmModPoly(2, dV=p[1], dW=p[2:3]) +dlmModSeas(12, dV=p[4])
+  )}
+#MLE
+model.mle <- dlmMLE(training_dataset, parm=c(1, 1, 1, 1), build=model.build)
+model.fit <- model.build(model.mle$par)
+model.filtered <- dlmFilter(training_dataset, model.fit)
+model.smoothed <- dlmSmooth(training_dataset, model.fit)
+```
+
+
+```{r}
+#perdict
+nAhead <- length(test_plus_noisy)
+model.forecast <- dlmForecast(model.filtered, nAhead=nAhead)
+a <- drop(model.forecast$a%*%t(FF(model.fit)))
+```
+
+```{r}
+test <- test_plus_noisy
+predict_result <- a
+ptable <- cbind(as.data.frame(predict_result),as.data.frame(test))
+colnames(ptable) <- c("predict","test")
+summary(aov(values~ind,data=stack(ptable)))
+```
+
+
+
+
+
+
+
+```{r}
+
+training_dataset <- EMR_train
+testing_dataset <- EMR_test
+# noise return
+train_plus_noisy <- training_dataset + rnorm(length(training_dataset), 0, 2)
+test_plus_noisy <- testing_dataset + rnorm(length(testing_dataset), 0, 2)
+# forecasting using state sapce models
+model.build <- function(p) {
+  return(
+    dlmModPoly(2, dV=p[1], dW=p[2:3]) +dlmModSeas(12, dV=p[4])
+  )}
+#MLE
+model.mle <- dlmMLE(training_dataset, parm=c(1, 1, 1, 1), build=model.build)
+model.fit <- model.build(model.mle$par)
+model.filtered <- dlmFilter(training_dataset, model.fit)
+model.smoothed <- dlmSmooth(training_dataset, model.fit)
+```
+
+
+```{r}
+#perdict
+nAhead <- length(test_plus_noisy)
+model.forecast <- dlmForecast(model.filtered, nAhead=nAhead)
+a <- drop(model.forecast$a%*%t(FF(model.fit)))
+```
+
+```{r}
+test <- test_plus_noisy
+predict_result <- a
+ptable <- cbind(as.data.frame(predict_result),as.data.frame(test))
+colnames(ptable) <- c("predict","test")
+summary(aov(values~ind,data=stack(ptable)))
+```
+
+
+## VARMA
+
+
+```{r}
+library(MTS)
+training_metrix <- cbind(as.data.frame(MMM_train),as.data.frame(HON_train),as.data.frame(EMR_train))
+result <- VARMA(training_metrix,p=1,q=1)
+result
+```
+
+https://faculty.chicagobooth.edu/ruey.tsay/teaching/mtsbk/
+
+```{r}
+
+```
+
+```{r}
+VARMA_Predict_metrix <- VARMApred(result,h=length(test),orig=0)
+VARMA_Predict_metrix <- as.data.frame(VARMA_Predict_metrix$pred)
+VARMA_Predict_metrix
+```
+
+```{r}
+test <- MMM_test
+predict <- VARMA_Predict_metrix$MMM_train
+ANOVA_metrix <- cbind(as.data.frame(test),as.data.frame(predict))
+summary(aov(values~ind,data=stack(ANOVA_metrix)))
+```
+
+```{r}
+test <- HON_test
+predict <- VARMA_Predict_metrix$HON_train
+ANOVA_metrix <- cbind(as.data.frame(test),as.data.frame(predict))
+summary(aov(values~ind,data=stack(ANOVA_metrix)))
+```
+
+```{r}
+test <- EMR_test
+predict <- VARMA_Predict_metrix$EMR_train
+ANOVA_metrix <- cbind(as.data.frame(test),as.data.frame(predict))
+summary(aov(values~ind,data=stack(ANOVA_metrix)))
+```
+
+
+
+
+
+
+
+
+
+
+
