@@ -9,3 +9,7 @@ TikTok-Market-Research-CHINESE
 
 ## - Stock Data Modeling Report
 WFE-Testing-and-Stock-Model-Selection
+
+## - Data Visualization
+[ggplot(R)] Farmers-Market
+[Tableau]
