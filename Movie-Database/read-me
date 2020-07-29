@@ -1,1 +1,4 @@
 This is a movie database for streaming and make simple genre based recommandation.
+
+Code pack includes web scraper, data cleaning code, API interacting code, and browser code based on sqlite.
+Read the report to get basic clue.
