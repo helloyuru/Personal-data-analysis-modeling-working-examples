@@ -1,0 +1,725 @@
+---
+title: 'visualization mid #1'
+author: "Yuru Li"
+date: "10/21/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# install packages
+```{r}
+library(ggplot2)
+library(stringr)
+library(dplyr)
+library(gridExtra)
+library(lubridate)
+library(broom)
+```
+
+# import dataset + convert all letter to lower case
+```{r}
+market <- read.csv("/Users/yuru/Documents/IE 6600 SEC03 18025 Computation and Visualization for Analytics/midterm#1/farmers_market_info.csv",sep = ",",header = T)
+market <- as.data.frame(sapply(market, tolower))
+
+
+```
+
+# Problem 1
+gives geography based insights about the farmers market.
+
+Group the different states
+```{r}
+# Defined by United States Census Bureau
+Northeast <- tolower(c('Connecticut', 'Maine', 'Massachusetts', 'New Hampshire', 'Rhode Island',  'Vermont','New Jersey', 'New York', 'Pennsylvania'))
+
+Midwest <- tolower(c('Illinois', 'Indiana', 'Michigan', 'Ohio', 'Wisconsin','Iowa', 'Kansas', 'Minnesota', 'Missouri', 'Nebraska', 'North Dakota', 'South Dakota'))
+
+South <- tolower(c('Delaware', 'Florida', 'Georgia', 'Maryland', 'North Carolina', 'South Carolina', 'Virginia', 'Washington D.C.', 'West Virginia','Alabama', 'Kentucky', 'Mississippi', 'Tennessee','Arkansas', 'Louisiana', 'Oklahoma', 'Texas'))
+
+West <- tolower(c('Arizona', 'Colorado', 'Idaho', 'Montana', 'Nevada', 'New Mexico', 'Utah', 'Wyoming','Alaska', 'California', 'Hawaii', 'Oregon', 'Washington'))
+```
+
+Trim whitespace
+```{r}
+market$State <- str_trim(market$State, "both")
+market$County <- str_trim(market$County, "both")
+market$city <- str_trim(market$city, "both")
+```
+
+Subsetting dataset
+```{r}
+market_sub_Northeast <- subset(market, State %in% Northeast)
+market_sub_Midwest <- subset(market, State %in% Midwest)
+market_sub_South <- subset(market, State %in% South)
+market_sub_West <- subset(market, State %in% West)
+```
+
+Summarise info
+```{r}
+market_Northeast <- summarise(group_by(market_sub_Northeast,State),count=n())
+market_Midwest <- summarise(group_by(market_sub_Midwest,State),count=n())
+market_South <- summarise(group_by(market_sub_South,State),count=n())
+market_West <- summarise(group_by(market_sub_West,State),count=n())
+
+```
+
+```{r}
+market_Northeast_area <- market_Northeast
+market_Midwest_area <- market_Midwest
+market_South_area <- market_South
+market_West_area <- market_West
+
+market_Northeast_area$area <- "Northeast"
+market_Midwest_area$area <- "Midwest"
+market_South_area$area <- "South"
+market_West_area$area <- "West"
+```
+
+```{r}
+market_areas_bind <- rbind(market_Northeast_area,market_Midwest_area,market_South_area,market_West_area)
+market_areas_bind
+```
+
+```{r fig.height=7, fig.width=7}
+ggplot(market_areas_bind,aes(reorder(State,count),count,fill=area))+
+  geom_bar(stat="identity")+
+  coord_flip()+
+  ggtitle("Farmers Market Distribution over US")+
+  xlab("State")+
+  ylab("Number of Farmers Market")+
+  labs(fill="US Area")+
+  theme(axis.text.y = element_text(color = "grey20", size = 13),
+        axis.text.x = element_text(color = "grey20", size = 13),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold")
+        )+
+  geom_hline(aes(yintercept=mean(count)),color="blue")+
+  scale_fill_manual(values = c("#44bec7","#ffc300","#fa3c4c","#d696bb"))
+  
+```
+
+
+
+
+Plot (abandoned plot, keep for personel record)
+```{r fig.height=6, fig.width=6}
+
+plot_market_Northeast <- ggplot(market_Northeast,aes(x=reorder(State,count),y=count))+
+  geom_bar(stat = "identity",fill="#007777")+
+  coord_flip()+
+  xlab("States in Northeast US")+
+  ylab("Number of Farmers Market")+
+  ggtitle("Northeast US")+ 
+  theme(axis.text.y = element_text(color = "grey20", size = 13),
+        axis.text.x = element_text(color = "grey20", size = 13),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold")
+        )+
+  geom_text(aes(label = count), nudge_y = 30, color = "yellow4",size=5)+
+  ylim(0, 800)
+
+plot_market_Midwest <- ggplot(market_Midwest,aes(x=reorder(State,count),y=count))+
+  geom_bar(stat = "identity",fill="#007777")+
+  coord_flip()+
+  xlab("States in Midwest US")+
+  ylab("Number of Farmers Market")+
+  ggtitle("Midwest US")+ 
+  theme(axis.text.y = element_text(color = "grey20", size = 13),
+        axis.text.x = element_text(color = "grey20", size = 13),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold")
+        )+
+  geom_text(aes(label = count), nudge_y = 30, color = "yellow4",size=5)+
+  ylim(0, 800)
+
+plot_market_South <- ggplot(market_South,aes(x=reorder(State,count),y=count))+
+  geom_bar(stat = "identity",fill="#007777")+
+  coord_flip()+
+  xlab("States in South US")+
+  ylab("Number of Farmers Market")+
+  ggtitle("South US")+ 
+  theme(axis.text.y = element_text(color = "grey20", size = 13),
+        axis.text.x = element_text(color = "grey20", size = 13),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold")
+        )+
+  geom_text(aes(label = count), nudge_y = 30, color = "yellow4",size=5)+
+  ylim(0, 800)
+
+plot_market_West <- ggplot(market_West,aes(x=reorder(State,count),y=count))+
+  geom_bar(stat = "identity",fill="#007777")+
+  coord_flip()+
+  xlab("States in West US")+
+  ylab("Number of Farmers Market")+
+  ggtitle("West US")+ 
+  geom_text(aes(label = count), nudge_y = 30, color = "yellow4",size=5)+
+  theme(axis.text.y = element_text(color = "grey20", size = 13),
+        axis.text.x = element_text(color = "grey20", size = 13),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold")
+        )+
+  ylim(0, 800)
+
+grid.arrange(plot_market_Northeast, plot_market_Midwest, plot_market_South,plot_market_West,ncol = 2)
+```
+
+
+
+
+# Problem 2
+```{r}
+#dates <- as.Date(market[1,13], "%m/%d/%Y")
+#dates
+#dates <- as.Date(market[1,13], "%m/%d/%Y to %m/%d/%Y")
+#dates
+#,15,17,19
+market_sub_time_1 <- as.data.frame(market[,c(1,13)])
+market_sub_time_1
+dates_1_1 <- as.Date(market_sub_time_1[1,2], "%m/%d/%Y")
+dates_1_1
+dates_1_2 <- as.Date(market_sub_time_1[1,2], "%m/%d/%Y to %m/%d/%Y")
+dates_1_2
+
+#Season1
+dates_S1_D1 <- c()
+dates_S1_D2 <- c()
+for( i in 1:nrow(market_sub_time_1) ){
+  dates_S1_D1 <- append(dates_S1_D1,as.Date(market_sub_time_1[i,2], "%m/%d/%Y"))
+  dates_S1_D2 <- append(dates_S1_D2,as.Date(market_sub_time_1[i,2], "%m/%d/%Y to %m/%d/%Y"))
+}
+FMID_1 <- as.data.frame(market_sub_time_1[,1])
+dates_S1_D1 <- as.data.frame(dates_S1_D1)
+dates_S1_D2 <- as.data.frame(dates_S1_D2)
+
+market_time_S1<- na.omit(cbind(FMID_1,dates_S1_D1,dates_S1_D2))
+market_time_S1
+
+```
+
+```{r}
+Season1_year <- factor(year(market_time_S1$dates_S1_D1))
+Season1_year <- as.data.frame(tidy(summary(Season1_year)))
+
+
+colnames(Season1_year) <- c("year","count")
+Season1_year
+```
+
+```{r}
+#Season2
+market_sub_time_2 <- as.data.frame(market[,c(1,15)])
+
+dates_S2_D1 <- c()
+dates_S2_D2 <- c()
+for( i in 1:nrow(market_sub_time_2) ){
+  dates_S2_D1 <- append(dates_S2_D1,as.Date(market_sub_time_2[i,2], "%m/%d/%Y"))
+  dates_S2_D2 <- append(dates_S2_D2,as.Date(market_sub_time_2[i,2], "%m/%d/%Y to %m/%d/%Y"))
+}
+FMID_2 <- as.data.frame(market_sub_time_2[,1])
+dates_S2_D1 <- as.data.frame(dates_S2_D1)
+dates_S2_D2 <- as.data.frame(dates_S2_D2)
+
+market_time_S2<- na.omit(cbind(FMID_2,dates_S2_D1,dates_S2_D2))
+market_time_S2
+
+Season2_year <- factor(year(market_time_S2$dates_S2_D1))
+Season2_year <- as.data.frame(tidy(summary(Season2_year)))
+
+
+colnames(Season2_year) <- c("year","count")
+Season2_year
+```
+
+```{r}
+#Season3
+market_sub_time_3 <- as.data.frame(market[,c(1,17)])
+
+dates_S3_D1 <- c()
+dates_S3_D2 <- c()
+for( i in 1:nrow(market_sub_time_3) ){
+  dates_S3_D1 <- append(dates_S3_D1,as.Date(market_sub_time_3[i,2], "%m/%d/%Y"))
+  dates_S3_D2 <- append(dates_S3_D2,as.Date(market_sub_time_3[i,2], "%m/%d/%Y to %m/%d/%Y"))
+}
+FMID_3 <- as.data.frame(market_sub_time_3[,1])
+dates_S3_D1 <- as.data.frame(dates_S3_D1)
+dates_S3_D2 <- as.data.frame(dates_S3_D2)
+
+market_time_S3<- na.omit(cbind(FMID_3,dates_S3_D1,dates_S3_D2))
+market_time_S3
+
+Season3_year <- factor(year(market_time_S3$dates_S3_D1))
+Season3_year <- as.data.frame(tidy(summary(Season3_year)))
+
+
+colnames(Season3_year) <- c("year","count")
+Season3_year
+```
+
+```{r}
+#Season4
+market_sub_time_4 <- as.data.frame(market[,c(1,19)])
+
+dates_S4_D1 <- c()
+dates_S4_D2 <- c()
+for( i in 1:nrow(market_sub_time_4) ){
+  dates_S4_D1 <- append(dates_S4_D1,as.Date(market_sub_time_4[i,2], "%m/%d/%Y"))
+  dates_S4_D2 <- append(dates_S4_D2,as.Date(market_sub_time_4[i,2], "%m/%d/%Y to %m/%d/%Y"))
+}
+FMID_4 <- as.data.frame(market_sub_time_4[,1])
+dates_S4_D1 <- as.data.frame(dates_S4_D1)
+dates_S4_D2 <- as.data.frame(dates_S4_D2)
+
+market_time_S4<- na.omit(cbind(FMID_4,dates_S4_D1,dates_S4_D2))
+market_time_S4
+
+Season4_year <- factor(year(market_time_S4$dates_S4_D1))
+Season4_year <- as.data.frame(tidy(summary(Season4_year)))
+
+
+colnames(Season4_year) <- c("year","count")
+Season4_year
+```
+
+```{r}
+#Join 4 tables together
+join_4_Season<- full_join(full_join(full_join(Season1_year,Season2_year,by=c("year"="year")),Season3_year,by=c("year"="year")),Season4_year,by=c("year"="year"))
+join_4_Season[is.na(join_4_Season)] <- 0
+
+join_4_Season$count <- join_4_Season$count.x+join_4_Season$count.y+join_4_Season$count.x.x+join_4_Season$count.y.y
+
+join_4_Season <- join_4_Season[1:(nrow(join_4_Season)-1),c(1,6)]
+join_4_Season
+```
+
+```{r}
+ggplot(join_4_Season,aes(factor(year),count,group=1))+
+  geom_line()+
+  geom_point()+
+  ggtitle("The Trend of Farmer Market Attendance")+
+  xlab("Year")+
+  ylab("Count")+  
+  theme(axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold")
+        )
+```
+
+
+# Problem 3
+*Give product based insights that helps the client to understand the type of products or product mix in farmers market across the country*
+
+Trim whitespace
+```{r}
+truth <- sapply(market,is.character)
+market <- data.frame(cbind(sapply(market[,truth],trimws,which="both"),market[,!truth]))
+```
+
+market_sub_Northeast 
+market_sub_Midwest
+market_sub_South
+market_sub_West 
+```{r}
+#market_sub_Northeast 
+
+N_yes_count <- c()
+for(i in 29:54){
+  N_yes_count <- append(N_yes_count,
+                      as.numeric(as.data.frame(table(market_sub_Northeast[,i]))[which(as.data.frame(table(market_sub_Northeast[,i]))$Var1=='y'),2]))
+}
+
+N_no_count <- c()
+for(i in 29:54){
+  N_no_count <- append(N_no_count,
+                      as.numeric(as.data.frame(table(market_sub_Northeast[,i]))[which(as.data.frame(table(market_sub_Northeast[,i]))$Var1=='n'),2]))
+}
+
+N_column_name <- colnames(market_sub_Northeast[,29:54])
+
+
+
+N_T_3_1 <- cbind(as.data.frame(N_column_name),YorN='y',as.data.frame(N_yes_count))
+colnames(N_T_3_1)[3] <- 'count'
+
+N_T_3_2 <- cbind(as.data.frame(N_column_name),YorN='n',as.data.frame(N_no_count))
+colnames(N_T_3_2)[3] <- 'count'
+
+N_T_3 <- rbind(N_T_3_1,N_T_3_2)
+N_T_3
+
+```
+
+```{r}
+#market_sub_Midwest
+M_yes_count <- c()
+for(i in 29:54){
+  M_yes_count <- append(M_yes_count,
+                      as.numeric(as.data.frame(table(market_sub_Midwest[,i]))[which(as.data.frame(table(market_sub_Midwest[,i]))$Var1=='y'),2]))
+}
+
+M_no_count <- c()
+for(i in 29:54){
+  M_no_count <- append(M_no_count,
+                      as.numeric(as.data.frame(table(market_sub_Midwest[,i]))[which(as.data.frame(table(market_sub_Midwest[,i]))$Var1=='n'),2]))
+}
+
+M_column_name <- colnames(market_sub_Midwest[,29:54])
+
+
+
+M_T_3_1 <- cbind(as.data.frame(M_column_name),YorN='y',as.data.frame(M_yes_count))
+colnames(M_T_3_1)[3] <- 'count'
+
+M_T_3_2 <- cbind(as.data.frame(M_column_name),YorN='n',as.data.frame(M_no_count))
+colnames(M_T_3_2)[3] <- 'count'
+
+M_T_3 <- rbind(M_T_3_1,M_T_3_2)
+M_T_3
+```
+
+```{r}
+#market_sub_South
+S_yes_count <- c()
+for(i in 29:54){
+  S_yes_count <- append(S_yes_count,
+                      as.numeric(as.data.frame(table(market_sub_South[,i]))[which(as.data.frame(table(market_sub_South[,i]))$Var1=='y'),2]))
+}
+
+S_no_count <- c()
+for(i in 29:54){
+  S_no_count <- append(S_no_count,
+                      as.numeric(as.data.frame(table(market_sub_South[,i]))[which(as.data.frame(table(market_sub_South[,i]))$Var1=='n'),2]))
+}
+
+S_column_name <- colnames(market_sub_South[,29:54])
+
+
+
+S_T_3_1 <- cbind(as.data.frame(S_column_name),YorN='y',as.data.frame(S_yes_count))
+colnames(S_T_3_1)[3] <- 'count'
+
+S_T_3_2 <- cbind(as.data.frame(S_column_name),YorN='n',as.data.frame(S_no_count))
+colnames(S_T_3_2)[3] <- 'count'
+
+S_T_3 <- rbind(S_T_3_1,S_T_3_2)
+S_T_3
+```
+
+```{r}
+#market_sub_West 
+W_yes_count <- c()
+for(i in 29:54){
+  W_yes_count <- append(W_yes_count,
+                      as.numeric(as.data.frame(table(market_sub_West[,i]))[which(as.data.frame(table(market_sub_West[,i]))$Var1=='y'),2]))
+}
+
+W_no_count <- c()
+for(i in 29:54){
+  W_no_count <- append(W_no_count,
+                      as.numeric(as.data.frame(table(market_sub_West[,i]))[which(as.data.frame(table(market_sub_West[,i]))$Var1=='n'),2]))
+}
+
+W_column_name <- colnames(market_sub_West[,29:54])
+
+
+
+W_T_3_1 <- cbind(as.data.frame(W_column_name),YorN='y',as.data.frame(W_yes_count))
+colnames(W_T_3_1)[3] <- 'count'
+
+W_T_3_2 <- cbind(as.data.frame(W_column_name),YorN='n',as.data.frame(W_no_count))
+colnames(W_T_3_2)[3] <- 'count'
+
+W_T_3 <- rbind(W_T_3_1,W_T_3_2)
+W_T_3
+```
+
+
+Build table (demo)
+```{r demo}
+yes_count <- c()
+for(i in 29:54){
+  yes_count <- append(yes_count,
+                      as.numeric(as.data.frame(table(market[,i]))[which(as.data.frame(table(market[,i]))$Var1=='y'),2]))
+}
+
+no_count <- c()
+for(i in 29:54){
+  no_count <- append(no_count,
+                      as.numeric(as.data.frame(table(market[,i]))[which(as.data.frame(table(market[,i]))$Var1=='n'),2]))
+}
+
+column_name <- colnames(market[,29:54])
+
+
+T_3_1 <- cbind(item=as.data.frame(column_name),YorN='y',count=as.data.frame(yes_count))
+colnames(T_3_1)[3] <- 'count'
+
+T_3_2 <- cbind(item=as.data.frame(column_name),YorN='n',count=as.data.frame(no_count))
+colnames(T_3_2)[3] <- 'count'
+
+T_3 <- rbind(T_3_1,T_3_2)
+T_3
+```
+
+
+Plot(demo)
+```{r}
+ggplot(T_3,aes(x = column_name ,y =count,fill=factor(YorN,levels=c("n","y" )),label=count))+
+  geom_bar(stat="identity") +
+  coord_flip()+
+  xlab('Products')+
+  ylab('Number of Farmers Market that have this product')+
+  labs(fill = "YorN")+
+  scale_fill_manual(values = c("orange1","olivedrab2"))+
+  ggtitle("              Plot of Product Statistics")+
+  theme(axis.text.y = element_text(color = "grey20", size = 10),
+        axis.text.x = element_text(color = "grey20", size = 10),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold")
+        )
+
+
+
+
+```
+Plot
+```{r fig.height=8, fig.width=8}
+#market_sub_Northeast 
+P3_N <- ggplot(N_T_3,aes(x = N_column_name ,y =count,fill=factor(YorN,levels=c("n","y" )),label=count))+
+  geom_bar(stat="identity") +
+  coord_flip()+
+  xlab('Products')+
+  ylab('Number of Farmers Market that have this product')+
+  labs(fill = "Have or Not")+
+  scale_fill_manual(values = c("orange1","olivedrab2"))+
+  ggtitle("Plot of Product Statistics \n(Farmers Market in Northeast US)")+
+  theme(axis.text.y = element_text(color = "grey20", size = 10),
+        axis.text.x = element_text(color = "grey20", size = 10),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold"),
+        legend.position = "bottom"
+        )+
+  ylim(0, 2000)
+
+#market_sub_Midwest
+P3_M <- ggplot(M_T_3,aes(x = M_column_name ,y =count,fill=factor(YorN,levels=c("n","y" )),label=count))+
+  geom_bar(stat="identity") +
+  coord_flip()+
+  xlab('Products')+
+  ylab('Number of Farmers Market that have this product')+
+  labs(fill = "Have or Not")+
+  scale_fill_manual(values = c("orange1","olivedrab2"))+
+  ggtitle("Plot of Product Statistics \n(Farmers Market in Midwest US)")+
+  theme(axis.text.y = element_text(color = "grey20", size = 10),
+        axis.text.x = element_text(color = "grey20", size = 10),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold"),
+        legend.position = "bottom"
+        )+
+  ylim(0, 2000)
+
+#market_sub_South
+P3_S <- ggplot(S_T_3,aes(x = S_column_name ,y =count,fill=factor(YorN,levels=c("n","y" )),label=count))+
+  geom_bar(stat="identity") +
+  coord_flip()+
+  xlab('Products')+
+  ylab('Number of Farmers Market that have this product')+
+  labs(fill = "Have or Not")+
+  scale_fill_manual(values = c("orange1","olivedrab2"))+
+  ggtitle("Plot of Product Statistics \n(Farmers Market in South US)")+
+  theme(axis.text.y = element_text(color = "grey20", size = 10),
+        axis.text.x = element_text(color = "grey20", size = 10),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold"),
+        legend.position = "bottom"
+        )+
+  ylim(0, 2000)
+
+#market_sub_West 
+P3_W <- ggplot(W_T_3,aes(x = W_column_name ,y =count,fill=factor(YorN,levels=c("n","y" )),label=count))+
+  geom_bar(stat="identity") +
+  coord_flip()+
+  xlab('Products')+
+  ylab('Number of Farmers Market that have this product')+
+  labs(fill = "Have or Not")+
+  scale_fill_manual(values = c("orange1","olivedrab2"))+
+  ggtitle("Plot of Product Statistics \n(Farmers Market in West US)")+
+  theme(axis.text.y = element_text(color = "grey20", size = 10),
+        axis.text.x = element_text(color = "grey20", size = 10),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold"),
+        legend.position = "bottom")+
+  ylim(0, 2000)
+
+grid.arrange(P3_N, P3_M, P3_S, P3_W,ncol = 2)
+```
+
+# Problem 4
+Give insights on payment modes used by the farmers market
+
+```{r}
+Pay_yes_count <- c()
+for(i in 24:28){
+  Pay_yes_count <- append(Pay_yes_count,
+                      as.numeric(as.data.frame(table(market[,i]))[which(as.data.frame(table(market[,i]))$Var1=='y'),2]))
+}
+
+Pay_no_count <- c()
+for(i in 24:28){
+  Pay_no_count <- append(Pay_no_count,
+                      as.numeric(as.data.frame(table(market[,i]))[which(as.data.frame(table(market[,i]))$Var1=='n'),2]))
+}
+
+Pay_column_name <- colnames(market[,24:28])
+
+
+
+Pay_T_3_1 <- cbind(as.data.frame(Pay_column_name),YorN='y',as.data.frame(Pay_yes_count))
+colnames(Pay_T_3_1)[3] <- 'count'
+
+Pay_T_3_2 <- cbind(as.data.frame(Pay_column_name),YorN='n',as.data.frame(Pay_no_count))
+colnames(Pay_T_3_2)[3] <- 'count'
+
+Pay_T_3 <- rbind(Pay_T_3_1,Pay_T_3_2)
+Pay_T_3
+
+```
+
+```{r}
+ggplot(Pay_T_3,aes(x = Pay_column_name ,y =count,fill=factor(YorN,levels=c("n","y" )),label=count))+
+  geom_bar(stat="identity") +
+  coord_flip()+
+  xlab('Products')+
+  ylab('Number of Farmers Market that have this product')+
+  labs(fill = "Have or Not")+
+  scale_fill_manual(values = c("orange1","olivedrab2"))+
+  ggtitle("Plot of Product Statistics \n(Farmers Market in West US)")+
+  theme(axis.text.y = element_text(color = "grey20", size = 10),
+        axis.text.x = element_text(color = "grey20", size = 10),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold"),
+        legend.position = "bottom")
+
+
+pct <- round(Pay_yes_count/sum(Pay_yes_count)*100)
+
+Pay_column_name <- paste(Pay_column_name, pct) # add percents to labels 
+Pay_column_name <- paste(Pay_column_name,"%",sep="") # ad % to labels 
+
+
+pie(Pay_yes_count, labels = Pay_column_name, main="Pie Chart of Payment modes")
+```
+
+
+# Problem 5
+Give insights that are derived from the combination of above four questions.
+```{r}
+#Northeast
+market_sub_Multiple <- market[,c(3,13,35)]
+market_sub_Multiple_1 <- subset(market_sub_Multiple,State %in% Northeast)
+market_sub_Multiple_1$Area <- "Northeast"
+
+dates_Multiple_1 <- c()
+for( i in 1:nrow(market_sub_Multiple_1) ){
+  dates_Multiple_1 <- append(dates_Multiple_1,as.Date(market_sub_Multiple_1[i,2], "%m/%d/%Y"))
+}
+
+Northeast_multiple <- cbind(market_sub_Multiple_1[,-2],as.data.frame(year(dates_Multiple_1)))
+colnames(Northeast_multiple)[4] <- "year"
+Northeast_multiple
+```
+
+```{r}
+#Midwest
+market_sub_Multiple_2 <- subset(market_sub_Multiple,State %in% Midwest)
+market_sub_Multiple_2$Area <- "Midwest"
+
+dates_Multiple_2 <- c()
+for( i in 1:nrow(market_sub_Multiple_2) ){
+  dates_Multiple_2 <- append(dates_Multiple_2,as.Date(market_sub_Multiple_2[i,2], "%m/%d/%Y"))
+}
+
+Midwest_multiple <- cbind(market_sub_Multiple_2[,-2],as.data.frame(year(dates_Multiple_2)))
+colnames(Midwest_multiple)[4] <- "year"
+Midwest_multiple
+```
+
+```{r}
+#South
+market_sub_Multiple_3 <- subset(market_sub_Multiple,State %in% South)
+market_sub_Multiple_3$Area <- "South"
+
+dates_Multiple_3 <- c()
+for( i in 1:nrow(market_sub_Multiple_3) ){
+  dates_Multiple_3 <- append(dates_Multiple_3,as.Date(market_sub_Multiple_3[i,2], "%m/%d/%Y"))
+}
+
+South_multiple <- cbind(market_sub_Multiple_3[,-2],as.data.frame(year(dates_Multiple_3)))
+colnames(South_multiple)[4] <- "year"
+South_multiple
+```
+
+```{r}
+#West
+market_sub_Multiple_4 <- subset(market_sub_Multiple,State %in% West)
+market_sub_Multiple_4$Area <- "West"
+
+dates_Multiple_4 <- c()
+for( i in 1:nrow(market_sub_Multiple_4) ){
+  dates_Multiple_4 <- append(dates_Multiple_4,as.Date(market_sub_Multiple_4[i,2], "%m/%d/%Y"))
+}
+
+West_multiple <- cbind(market_sub_Multiple_4[,-2],as.data.frame(year(dates_Multiple_4)))
+colnames(West_multiple)[4] <- "year"
+West_multiple
+
+```
+
+```{r}
+multiple_bind <- rbind(Northeast_multiple,Midwest_multiple,South_multiple,West_multiple)
+multiple_bind <- na.omit(multiple_bind)
+
+for (k in 1:nrow(multiple_bind)) {
+  if(multiple_bind$Seafood[k]=="y"){
+    multiple_bind$seafood[k] <- 1
+  }else{
+    multiple_bind$seafood[k] <- 0
+  }
+}
+
+multiple_bind <- multiple_bind[,-2]
+
+multiple_summarise <- summarise(group_by(multiple_bind,Area,year),count_seafood=sum(seafood))
+multiple_summarise
+
+multiple_summarise <- subset(multiple_summarise,year %in% c(2012:2019))
+```
+
+```{r}
+ggplot(multiple_summarise,aes(factor(year),count_seafood,fill=factor(Area)))+
+  geom_bar(stat="identity",position="dodge")+
+  scale_fill_manual(values = c("#44bec7","#ffc300","#fa3c4c","#d696bb"))+
+  ggtitle("Number of Farmers Markets that Offers Seafood\nin Different Area from 2012 to 2019")+
+  xlab("Year")+
+  ylab("Number of Farmers Markets")+
+  labs(fill="Area")+
+  theme(axis.text.y = element_text(color = "grey20", size = 10),
+        axis.text.x = element_text(color = "grey20", size = 10),
+        axis.title.x = element_text(color = "grey20", size = 15),
+        axis.title.y = element_text(color = "grey20", size = 15),
+        plot.title = element_text(color="yellow4",size=20,face="bold"),
+        legend.position = "bottom")
+```
+
