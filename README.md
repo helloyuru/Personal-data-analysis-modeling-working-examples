@@ -7,5 +7,5 @@ Movie-Database
 ## - Market Report
 TikTok-Market-Research-CHINESE
 
-## - Stock data modeling Report
+## - Stock Data Modeling Report
 WFE-Testing-and-Stock-Model-Selection
